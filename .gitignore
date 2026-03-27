@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Project guide files
+DEBUG_REPORT.md
+BACKEND_IMPLEMENTATION_GUIDE.md
+ELECTRON_DESKTOP_GUIDE.md
+FREE_PYTHON_BACKEND_GUIDE.md
