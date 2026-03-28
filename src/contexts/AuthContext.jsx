@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/authService.js';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { authService } from "../services/authService.js";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
           setUser(userData);
         }
       } catch (err) {
-        console.error('Auth check failed:', err);
+        console.error("Auth check failed:", err);
         // Token might be invalid, clear it
         authService.logout();
       } finally {
@@ -79,6 +79,22 @@ export const AuthProvider = ({ children }) => {
     setError(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      setLoading(true);
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      return userData;
+    } catch (err) {
+      console.error("Refresh user failed:", err);
+      authService.logout();
+      setUser(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateProfile = async (userData) => {
     try {
       setLoading(true);
@@ -103,13 +119,10 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
     updateProfile,
     isAuthenticated: !!user,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./contexts/AuthContext.jsx";
 import AuthModal from "./components/AuthModal.jsx";
+import DashboardScreen from "./components/DashboardScreen.jsx";
+import LeaderboardScreen from "./components/LeaderboardScreen.jsx";
+import { projectsService } from "./services/projectsService.js";
+import { progressService } from "./services/progressService.js";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const T = {
@@ -320,7 +324,14 @@ const ProgressBar = ({ value, max, width = 24, color = T.green }) => {
 
 // ─── SCREENS ──────────────────────────────────────────────────────────────────
 
-function MainMenu({ state, onNav, user, isAuthenticated, onShowAuth, onLogout }) {
+function MainMenu({
+  state,
+  onNav,
+  user,
+  isAuthenticated,
+  onShowAuth,
+  onLogout,
+}) {
   const rank = getRank(state.xp);
   const nextRank = getNextRank(state.xp);
 
@@ -397,38 +408,50 @@ function MainMenu({ state, onNav, user, isAuthenticated, onShowAuth, onLogout })
         {
           key: "1",
           label: "Start a Project",
-          sub: `${PROJECTS.filter((p) => !state.completed.includes(p.id)).length} available`,
+          sub: `${availableProjects.filter((p) => !state.completed.includes(p.id?.toString())).length} available`,
           action: "projects",
         },
         {
           key: "2",
-          label: "Roadmap Progress",
-          sub: "APIs milestone: 60%",
-          action: "roadmap",
+          label: "Your Dashboard",
+          sub: "View progress & stats",
+          action: "dashboard",
         },
         {
           key: "3",
+          label: "Global Leaderboard",
+          sub: "Compete worldwide",
+          action: "leaderboard",
+        },
+        {
+          key: "4",
           label: "Achievements",
           sub: `${state.badges.length} badge${state.badges.length !== 1 ? "s" : ""} earned`,
           action: "achievements",
         },
         {
-          key: "4",
+          key: "5",
           label: "Community Hall",
           sub: "14 new submissions",
           action: "community",
         },
-        ...(isAuthenticated ? [{
-          key: "5",
-          label: `Logout (${user?.username})`,
-          sub: "Sign out of your account",
-          action: "logout",
-        }] : [{
-          key: "5",
-          label: "Login/Register",
-          sub: "Connect to save progress",
-          action: "auth",
-        }]),
+        ...(isAuthenticated
+          ? [
+              {
+                key: "6",
+                label: `Logout (${user?.username})`,
+                sub: "Sign out of your account",
+                action: "logout",
+              },
+            ]
+          : [
+              {
+                key: "6",
+                label: "Login/Register",
+                sub: "Connect to save progress",
+                action: "auth",
+              },
+            ]),
       ].map((item) => (
         <div
           key={item.key}
@@ -494,7 +517,7 @@ function MainMenu({ state, onNav, user, isAuthenticated, onShowAuth, onLogout })
         }}
       >
         <Line color={T.muted} style={{ fontSize: 11, textAlign: "center" }}>
-          Click a menu item or press <Key k="1" />–<Key k="4" /> to navigate ·{" "}
+          Click a menu item or press <Key k="1" />–<Key k="6" /> to navigate ·{" "}
           <Key k="q" /> quit
         </Line>
       </div>
@@ -502,7 +525,7 @@ function MainMenu({ state, onNav, user, isAuthenticated, onShowAuth, onLogout })
   );
 }
 
-function ProjectList({ state, onSelect, onBack }) {
+function ProjectList({ state, projects, onSelect, onBack }) {
   const [filter, setFilter] = useState("all");
   const tiers = ["all", "beginner", "intermediate", "advanced", "boss"];
   const colors = {
@@ -512,26 +535,16 @@ function ProjectList({ state, onSelect, onBack }) {
     boss: T.purple,
   };
 
-  const visible = PROJECTS.filter((p) => filter === "all" || p.tier === filter);
+  const visible = projects.filter((p) => filter === "all" || p.tier === filter);
   const isLocked = (p) => {
-    if (p.tier === "intermediate")
-      return (
-        state.completed.filter(
-          (id) => PROJECTS.find((x) => x.id === id)?.tier === "beginner",
-        ).length < 5
-      );
-    if (p.tier === "advanced")
-      return (
-        state.completed.filter(
-          (id) => PROJECTS.find((x) => x.id === id)?.tier === "intermediate",
-        ).length < 5
-      );
-    if (p.tier === "boss")
-      return (
-        state.completed.filter(
-          (id) => PROJECTS.find((x) => x.id === id)?.tier === "beginner",
-        ).length < 3
-      );
+    const getTierCount = (tier) =>
+      state.completed.filter(
+        (id) => projects.find((x) => x.id.toString() === id)?.tier === tier,
+      ).length;
+
+    if (p.tier === "intermediate") return getTierCount("beginner") < 5;
+    if (p.tier === "advanced") return getTierCount("intermediate") < 5;
+    if (p.tier === "boss") return getTierCount("beginner") < 3;
     return false;
   };
 
@@ -699,8 +712,7 @@ function ActiveProject({ project, state, onComplete, onBack, onDaVinci }) {
       } else {
         setTestsPassing(toPass);
         setRunning(false);
-        if (toPass === total)
-          setTimeout(() => onComplete(project, hints), 800);
+        if (toPass === total) setTimeout(() => onComplete(project, hints), 800);
         clearInterval(interval);
       }
     }, 80);
@@ -924,7 +936,9 @@ function DaVinciMode({ project, onSave, onBack }) {
 
 function EurekaScreen({ project, hints, rank, onContinue }) {
   const [show, setShow] = useState(false);
-  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const [quote] = useState(
+    () => QUOTES[Math.floor(Math.random() * QUOTES.length)],
+  );
   const bonus = hints === 0 ? 50 : 0;
   const earned = project.xp + bonus;
 
@@ -1386,7 +1400,7 @@ function Community({ onBack }) {
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
 export default function CodeSprint() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, refreshUser } = useAuth();
   const [screen, setScreen] = useState("menu");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [state, setState] = useState({
@@ -1398,6 +1412,36 @@ export default function CodeSprint() {
   });
   const [activeProject, setActiveProject] = useState(null);
   const [eurekaData, setEurekaData] = useState(null);
+
+  const [availableProjects, setAvailableProjects] = useState(PROJECTS);
+
+  useEffect(() => {
+    const fetchUserProjects = async () => {
+      if (!isAuthenticated || !user) return;
+      try {
+        const userProjects = await projectsService.getUserProjects(user.id);
+        if (userProjects && userProjects.length > 0) {
+          setAvailableProjects(
+            userProjects.map((p) => ({
+              id: p.id.toString(),
+              name: p.title || p.name,
+              tier: p.difficulty || p.tier,
+              concepts: p.concepts || [],
+              hours: p.hours || "2-4",
+              xp: p.xp_reward || p.xp || 100,
+              tests: p.test_cases?.length || p.tests || 5,
+              is_completed: p.is_completed || false,
+              ...p,
+            })),
+          );
+        }
+      } catch (err) {
+        console.error("Could not load user projects:", err);
+      }
+    };
+
+    fetchUserProjects();
+  }, [isAuthenticated, user]);
 
   const nav = (s) => setScreen(s);
 
@@ -1414,7 +1458,7 @@ export default function CodeSprint() {
     setScreen("project");
   };
 
-  const handleComplete = (project, hints) => {
+  const handleComplete = async (project, hints) => {
     const bonus = hints === 0 ? 50 : 0;
     const xpGain = project.xp + bonus - hints * 50;
     const newXp = state.xp + Math.max(xpGain, 0);
@@ -1422,6 +1466,21 @@ export default function CodeSprint() {
     const newBadges = [...state.badges];
     if (newCompleted.length === 1 && !newBadges.includes("first-blood"))
       newBadges.push("first-blood");
+
+    // Persist completion to backend using progress service
+    if (isAuthenticated) {
+      try {
+        await progressService.completeProject(project.id, {
+          hints_used: hints,
+          xp_gained: Math.max(xpGain, 0),
+          completed_at: new Date().toISOString(),
+        });
+        await refreshUser();
+      } catch (err) {
+        console.error("Project completion persistence failed:", err);
+      }
+    }
+
     setState((prev) => ({
       ...prev,
       xp: newXp,
@@ -1466,6 +1525,8 @@ export default function CodeSprint() {
     projects: "SELECT PROJECT",
     project: activeProject?.name?.toUpperCase(),
     davinci: "DA VINCI MODE",
+    dashboard: "YOUR DASHBOARD",
+    leaderboard: "GLOBAL LEADERBOARD",
     roadmap: "ROADMAP",
     achievements: "ACHIEVEMENTS",
     community: "COMMUNITY",
@@ -1569,9 +1630,16 @@ export default function CodeSprint() {
         {screen === "projects" && (
           <ProjectList
             state={state}
+            projects={availableProjects}
             onSelect={handleSelectProject}
             onBack={() => nav("menu")}
           />
+        )}
+        {screen === "dashboard" && isAuthenticated && (
+          <DashboardScreen onBack={() => nav("menu")} />
+        )}
+        {screen === "leaderboard" && (
+          <LeaderboardScreen onBack={() => nav("menu")} />
         )}
         {screen === "project" && activeProject && (
           <ActiveProject
