@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "./contexts/AuthContext.jsx";
+import AuthModal from "./components/AuthModal.jsx";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const T = {
@@ -318,7 +320,7 @@ const ProgressBar = ({ value, max, width = 24, color = T.green }) => {
 
 // ─── SCREENS ──────────────────────────────────────────────────────────────────
 
-function MainMenu({ state, onNav }) {
+function MainMenu({ state, onNav, user, isAuthenticated, onShowAuth, onLogout }) {
   const rank = getRank(state.xp);
   const nextRank = getNextRank(state.xp);
 
@@ -416,10 +418,29 @@ function MainMenu({ state, onNav }) {
           sub: "14 new submissions",
           action: "community",
         },
+        ...(isAuthenticated ? [{
+          key: "5",
+          label: `Logout (${user?.username})`,
+          sub: "Sign out of your account",
+          action: "logout",
+        }] : [{
+          key: "5",
+          label: "Login/Register",
+          sub: "Connect to save progress",
+          action: "auth",
+        }]),
       ].map((item) => (
         <div
           key={item.key}
-          onClick={() => onNav(item.action)}
+          onClick={() => {
+            if (item.action === "auth") {
+              onShowAuth();
+            } else if (item.action === "logout") {
+              onLogout();
+            } else {
+              onNav(item.action);
+            }
+          }}
           style={{
             display: "flex",
             alignItems: "center",
@@ -1365,7 +1386,9 @@ function Community({ onBack }) {
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
 export default function CodeSprint() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [screen, setScreen] = useState("menu");
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [state, setState] = useState({
     xp: 847,
     streak: 5,
@@ -1533,7 +1556,16 @@ export default function CodeSprint() {
         )}
 
         {/* Screens */}
-        {screen === "menu" && <MainMenu state={state} onNav={nav} />}
+        {screen === "menu" && (
+          <MainMenu
+            state={state}
+            onNav={nav}
+            user={user}
+            isAuthenticated={isAuthenticated}
+            onShowAuth={() => setShowAuthModal(true)}
+            onLogout={logout}
+          />
+        )}
         {screen === "projects" && (
           <ProjectList
             state={state}
@@ -1573,6 +1605,12 @@ export default function CodeSprint() {
           <Achievements state={state} onBack={() => nav("menu")} />
         )}
         {screen === "community" && <Community onBack={() => nav("menu")} />}
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
       </div>
     </div>
   );
