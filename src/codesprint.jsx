@@ -331,6 +331,7 @@ function MainMenu({
   isAuthenticated,
   onShowAuth,
   onLogout,
+  availableProjects,
 }) {
   const rank = getRank(state.xp);
   const nextRank = getNextRank(state.xp);
@@ -1625,6 +1626,7 @@ export default function CodeSprint() {
             isAuthenticated={isAuthenticated}
             onShowAuth={() => setShowAuthModal(true)}
             onLogout={logout}
+            availableProjects={availableProjects}
           />
         )}
         {screen === "projects" && (

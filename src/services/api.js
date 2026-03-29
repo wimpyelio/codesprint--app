@@ -1,19 +1,19 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:8004/api';
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8000/api";
 
 // Helper function to get auth token
-const getAuthToken = () => localStorage.getItem('token');
+const getAuthToken = () => localStorage.getItem("token");
 
 // Helper function to create headers
 const getHeaders = (includeAuth = true) => {
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   if (includeAuth) {
     const token = getAuthToken();
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
   }
 
@@ -33,7 +33,9 @@ const apiCall = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     return await response.json();
