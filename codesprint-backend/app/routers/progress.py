@@ -65,6 +65,9 @@ def complete_project(
     if progress_data.tests_passed < 0 or progress_data.total_tests <= 0 or progress_data.tests_passed > progress_data.total_tests:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid test counts")
 
+    if progress_data.hints_used < 0 or (hasattr(progress_data, 'total_hints') and progress_data.hints_used > progress_data.total_hints):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid hints_used")
+
     progress = db.query(UserProgress).filter(
         UserProgress.project_id == project_id,
         UserProgress.user_id == current_user.id
@@ -86,11 +89,12 @@ def complete_project(
     progress.tests_passed = progress_data.tests_passed
     progress.total_tests = progress_data.total_tests
     progress.hints_used = progress_data.hints_used
+    old_status = progress.status
     progress.status = "completed" if progress_data.tests_passed == progress_data.total_tests else "in_progress"
     progress.completed_at = datetime.utcnow() if progress.status == "completed" else None
 
     newly_earned_badges = []
-    if progress.status == "completed":
+    if old_status != "completed" and progress.status == "completed":
         xp_bonus = max(0, project.xp_reward - progress.hints_used * 50)
         progress.xp_earned = xp_bonus
         current_user.xp += xp_bonus

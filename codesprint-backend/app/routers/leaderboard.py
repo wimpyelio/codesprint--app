@@ -4,7 +4,7 @@ Implements efficient SQL queries with caching-ready patterns.
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from typing import List
 
 from app.config import get_db
@@ -35,14 +35,11 @@ def get_global_leaderboard(
     """
     users_with_stats = db.query(
         User,
-        (db.query(UserProgress).filter(
-            UserProgress.user_id == User.id,
-            UserProgress.status == 'completed'
-        ).count()).label('completion_count')
-    ).filter(User.is_active == True).order_by(desc(User.xp)).offset(offset).limit(limit).all()
+        func.count(UserProgress.id).label('completion_count')
+    ).outerjoin(UserProgress, (UserProgress.user_id == User.id) & (UserProgress.status == 'completed')).filter(User.is_active == True).group_by(User.id).order_by(desc(User.xp)).offset(offset).limit(limit).all()
     
     result = []
-    for rank, (user, _) in enumerate(users_with_stats, start=offset + 1):
+    for rank, (user, completion_count) in enumerate(users_with_stats, start=offset + 1):
         completed = db.query(UserProgress).filter(
             UserProgress.user_id == user.id,
             UserProgress.status == 'completed'
@@ -60,7 +57,7 @@ def get_global_leaderboard(
             is_active=user.is_active,
             created_at=user.created_at,
             rank=rank,
-            completion_count=len(completed),
+            completion_count=completion_count,
             average_hints=avg_hints
         ))
     
