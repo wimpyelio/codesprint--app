@@ -70,12 +70,11 @@ def update_project(
     if project_update.difficulty:
         project.difficulty = project_update.difficulty
     if project_update.is_completed is not None:
-        project.is_completed = project_update.is_completed
-        if project_update.is_completed:
+        if not project.is_completed and project_update.is_completed:
             project.completed_at = datetime.utcnow()
-            # Add XP to user
             current_user.xp += project.xp_reward
-            current_user.level = (current_user.xp // 1000) + 1
+            current_user.level = max(1, (current_user.xp // 1000) + 1)
+        project.is_completed = project_update.is_completed
     
     db.commit()
     db.refresh(project)
