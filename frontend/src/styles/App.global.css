@@ -1,0 +1,170 @@
+/* ─── ROOT STYLES ────────────────────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #050508;
+  --surface: #09090f;
+  --surface-alt: #0d0d16;
+  --border: rgba(0, 229, 255, 0.1);
+  --border-mid: rgba(0, 229, 255, 0.22);
+  --border-hot: rgba(0, 229, 255, 0.5);
+  --cyan: #00e5ff;
+  --cyan-dim: #00b8cc;
+  --cyan-faint: rgba(0, 229, 255, 0.06);
+  --amber: #ffb300;
+  --amber-dim: #cc8f00;
+  --amber-faint: rgba(255, 179, 0, 0.08);
+  --coral: #ff4060;
+  --coral-faint: rgba(255, 64, 96, 0.08);
+  --violet: #9f7aea;
+  --jade: #10b981;
+  --white: #e8eaf0;
+  --muted: #4a5080;
+  --muted-mid: #6b7299;
+  --font-mono: "Courier New", "Lucida Console", monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ─── SCROLLBAR STYLING ───────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hot);
+}
+
+/* ─── INPUT & BUTTON STYLES ──────────────────────────────────────────────── */
+button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button:active {
+  opacity: 0.8;
+}
+
+input,
+textarea {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--surface);
+  color: var(--white);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 3px;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+/* ─── ANIMATIONS ──────────────────────────────────────────────────────────── */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ─── UTILITY CLASSES ─────────────────────────────────────────────────────── */
+.loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  animation: pulse 2s infinite;
+}
+
+.error {
+  padding: 12px 16px;
+  background: rgba(255, 64, 96, 0.1);
+  border: 1px solid var(--coral);
+  color: var(--coral);
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.success {
+  padding: 12px 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--jade);
+  color: var(--jade);
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  :root {
+    font-size: 12px;
+  }
+
+  button {
+    font-size: 11px;
+  }
+
+  input,
+  textarea {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    font-size: 11px;
+  }
+}

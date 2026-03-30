@@ -1,30 +1,34 @@
-# Logs
-logs
-*.log
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Python
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
 
-# Editor directories and files
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# Editors / OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
 
-# Project guide files
-DEBUG_REPORT.md
-BACKEND_IMPLEMENTATION_GUIDE.md
-ELECTRON_DESKTOP_GUIDE.md
-FREE_PYTHON_BACKEND_GUIDE.md
+# Local build artifacts
+dist/
+coverage/
