@@ -172,10 +172,10 @@ PyJWT==2.8.1
 
 ### Supabase Configuration:
 
-- Project URL: https://snlrduzrgdycivzietvb.supabase.co
+- Project URL: https://YOUR_PROJECT_ID.supabase.co (stored in .env)
 - Database: PostgreSQL with SSL/TLS
 - Connection Pool: 10 base size, 20 overflow
-- Anon Key: sb_publishable_j9O_3YvOaBfS7pgCOsM41Q_NS3KDTRD
+- Anon Key: Stored securely in .env file (never commit)
 
 ### Status:
 

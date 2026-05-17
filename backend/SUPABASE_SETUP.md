@@ -14,20 +14,20 @@ Supabase is an open-source Firebase alternative that provides:
 Your backend is now configured to use Supabase PostgreSQL. Here's what's been set up:
 
 ### Credentials Saved In:
-- `.env` file (local, not in repo)
-- Database URL: From your connection string
-- Project URL: https://snlrduzrgdycivzietvb.supabase.co
-- Anon Key: For frontend access
+- `.env` file (local, not in repo - NEVER commit this!)
+- Database URL: Stored securely in .env
+- Project URL: Stored in .env
+- Anon Key: Stored in .env
 
 ## Manual Steps to Complete Setup
 
 ### 1. Update the Database URL in .env
 
-Your .env file has been created with placeholder `[YOUR-PASSWORD]`. Update it:
+Your .env file should contain your actual Supabase credentials. DO NOT COMMIT THIS FILE:
 
 ```bash
-# Replace [YOUR-PASSWORD] with your actual Supabase database password
-DATABASE_URL=postgresql://postgres:your-actual-password@db.snlrduzrgdycivzietvb.supabase.co:5432/postgres
+# Replace YOUR_PROJECT_ID and YOUR_PASSWORD with your actual Supabase values
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_ID.supabase.co:5432/postgres
 ```
 
 ### 2. Install Updated Dependencies
