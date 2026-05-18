@@ -187,6 +187,20 @@ export default function Leaderboard() {
         ))}
       </div>
 
+      {activeTab === 'streak' && (
+        <div style={{
+          padding: '8px 14px',
+          background: C.amberFaint,
+          border: `1px solid ${C.amber}33`,
+          borderRadius: 2,
+          marginBottom: 8,
+        }}>
+          <Mono size={10} color={C.amber}>
+            Streak tracking is under development — data will populate as users complete daily projects
+          </Mono>
+        </div>
+      )}
+
       {/* Rows */}
       {filtered.map((row) => {
         const isMe = row.isMe;
@@ -304,6 +318,9 @@ export default function Leaderboard() {
         }}
       >
         <Label style={{ marginBottom: 12 }}>Guild XP Standings</Label>
+        <Mono size={10} color={C.muted} style={{ display: 'block', marginBottom: 8 }}>
+          Guild analytics coming in a future update
+        </Mono>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {GUILDS.map((g, i) => (
             <div
@@ -340,14 +357,14 @@ export default function Leaderboard() {
                 {g.name}
               </Mono>
               <Mono size={13} color={g.color} style={{ display: "block" }}>
-                {Math.floor(Math.random() * 50000).toLocaleString()} XP
+                — XP
               </Mono>
               <Mono
                 size={10}
                 color={C.muted}
                 style={{ display: "block", marginTop: 2 }}
               >
-                {Math.floor(Math.random() * 1000)} members
+                — members
               </Mono>
             </div>
           ))}

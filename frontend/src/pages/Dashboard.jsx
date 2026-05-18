@@ -32,7 +32,23 @@ export default function Dashboard() {
         ]);
         setStats(statsData);
         setAchievements(achievementsData);
-        setRecentProjects(projectsData || []);
+        const completedProgress = (projectsData || [])
+          .filter(p => p.status === 'completed')
+          .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))
+          .slice(0, 5)
+          .map(p => ({
+            project_name: `Project #${p.project_id}`,
+            tier: 'beginner',
+            hints_used: p.hints_used,
+            xp_earned: p.xp_earned,
+            completed_days_ago: p.completed_at
+              ? (() => {
+                  const days = Math.floor((Date.now() - new Date(p.completed_at)) / 86400000);
+                  return days === 0 ? 'today' : `${days}d ago`;
+                })()
+              : 'today',
+          }));
+        setRecentProjects(completedProgress);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -218,7 +234,7 @@ export default function Dashboard() {
         <StatCard
           label="Projects Completed"
           value={stats?.projects_completed || 0}
-          sub={`of ${stats?.total_projects || 30} available`}
+          sub={`of ${stats?.projects_total || 0} available`}
           accent={C.cyan}
         />
         <StatCard
@@ -230,7 +246,7 @@ export default function Dashboard() {
         <StatCard
           label="Badges Earned"
           value={achievements?.length || 0}
-          sub={`of ${stats?.total_badges || 14} total`}
+          sub={`of ${stats?.total_badges || 0} total`}
           accent={C.violet}
         />
         <StatCard

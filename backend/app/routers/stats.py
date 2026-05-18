@@ -1,13 +1,14 @@
-"""
+"""  
 User stats endpoints for dashboard and profile analytics.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import Field
 from sqlalchemy.orm import Session
+from sqlalchemy import desc, func
 
 from app import schemas
 from app.config import get_db
@@ -15,6 +16,28 @@ from app.models import Achievement, Project, User, UserProgress
 from app.utils.auth import get_current_user
 
 router = APIRouter()
+
+RANK_THRESHOLDS = [
+    ("Curious", 0), ("Tinkerer", 300), ("Apprentice", 800),
+    ("Journeyman", 2000), ("Craftsperson", 5000),
+    ("Architect", 10000), ("Maestro", 25000),
+]
+
+def compute_rank(xp: int) -> tuple[str, int, int]:
+    """Returns (rank_name, current_rank_min_xp, next_rank_min_xp)"""
+    current_name, current_min = RANK_THRESHOLDS[0]
+    for i, (name, min_xp) in enumerate(RANK_THRESHOLDS):
+        if xp >= min_xp:
+            current_name, current_min = name, min_xp
+            next_min = RANK_THRESHOLDS[i + 1][1] if i + 1 < len(RANK_THRESHOLDS) else min_xp + 10000
+        else:
+            break
+    # Recompute next_min cleanly
+    for i, (name, min_xp) in enumerate(RANK_THRESHOLDS):
+        if name == current_name:
+            next_min = RANK_THRESHOLDS[i + 1][1] if i + 1 < len(RANK_THRESHOLDS) else min_xp + 10000
+            return current_name, current_min, next_min
+    return current_name, current_min, current_min + 10000
 
 
 class StatisticsSchema(schemas.BaseModel):
@@ -32,6 +55,21 @@ class StatisticsSchema(schemas.BaseModel):
     next_level_xp: int
     xp_to_next_level: int
     recent_completions: list = Field(default_factory=list)
+    rank: str = "Curious"
+    guild_name: str = "Unguilded"
+    xp_for_current_rank: int = 0
+    xp_for_next_rank: int = 300
+    rank_position: Optional[int] = None
+    best_streak: int = 0
+    weekly_xp: int = 0
+    weekly_xp_change: float = 0.0
+    projects_this_week: int = 0
+    hints_this_week: int = 0
+    beginner_completed: int = 0
+    intermediate_completed: int = 0
+    advanced_completed: int = 0
+    accuracy_percent: float = 0.0
+    total_badges: int = 0
 
 
 @router.get("/me/stats", response_model=StatisticsSchema)
@@ -81,6 +119,58 @@ def get_user_stats(
         1 if last_completed and (datetime.utcnow() - last_completed).days <= 1 else 0
     )
 
+    # Rank
+    rank_name, rank_min, rank_next = compute_rank(current_xp)
+
+    # Rank position (users with more XP than current user + 1)
+    rank_position = db.query(User).filter(
+        User.is_active == True, User.xp > current_xp
+    ).count() + 1
+
+    # Weekly stats
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    prior_week_start = week_ago - timedelta(days=7)
+
+    weekly_records = [
+        p for p in completed_projects
+        if p.completed_at and p.completed_at >= week_ago
+    ]
+    prior_week_records = [
+        p for p in completed_projects
+        if p.completed_at and prior_week_start <= p.completed_at < week_ago
+    ]
+    weekly_xp_earned = sum(p.xp_earned for p in weekly_records)
+    prior_xp = sum(p.xp_earned for p in prior_week_records)
+    weekly_xp_change_pct = (
+        round(((weekly_xp_earned - prior_xp) / prior_xp) * 100, 1) if prior_xp > 0 else 0.0
+    )
+    projects_this_week = len(weekly_records)
+    hints_this_week = sum(p.hints_used for p in weekly_records)
+
+    # Difficulty breakdown
+    beginner_completed = 0
+    intermediate_completed = 0
+    advanced_completed = 0
+    for p in completed_projects:
+        project = db.query(Project).filter(Project.id == p.project_id).first()
+        if project:
+            if project.difficulty == "beginner":
+                beginner_completed += 1
+            elif project.difficulty == "intermediate":
+                intermediate_completed += 1
+            elif project.difficulty == "advanced":
+                advanced_completed += 1
+
+    # Accuracy = % of completions done with 0 hints
+    pure_runs = sum(1 for p in completed_projects if p.hints_used == 0)
+    accuracy_percent = (
+        round((pure_runs / len(completed_projects)) * 100, 1)
+        if completed_projects else 0.0
+    )
+
+    # Total badges in system
+    total_badges_count = db.query(Achievement).count()
+
     return StatisticsSchema(
         total_xp=current_xp,
         current_level=current_level,
@@ -96,6 +186,21 @@ def get_user_stats(
         next_level_xp=next_level_xp,
         xp_to_next_level=xp_to_next,
         recent_completions=recent_list,
+        rank=rank_name,
+        guild_name="Unguilded",
+        xp_for_current_rank=rank_min,
+        xp_for_next_rank=rank_next,
+        rank_position=rank_position,
+        best_streak=1,
+        weekly_xp=weekly_xp_earned,
+        weekly_xp_change=weekly_xp_change_pct,
+        projects_this_week=projects_this_week,
+        hints_this_week=hints_this_week,
+        beginner_completed=beginner_completed,
+        intermediate_completed=intermediate_completed,
+        advanced_completed=advanced_completed,
+        accuracy_percent=accuracy_percent,
+        total_badges=total_badges_count,
     )
 
 

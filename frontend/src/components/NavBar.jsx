@@ -1,10 +1,10 @@
 import PropTypes from "prop-types";
 
 import { useAuth } from "../contexts/AuthContext";
-import { C } from "../utils/designTokens";
+import { C, getRankFromXP } from "../utils/designTokens";
 import { Mono, RankBadge } from "../utils/sharedComponents";
 
-export default function NavBar({ screen, setScreen, userStats }) {
+export default function NavBar({ screen, setScreen }) {
   const { user } = useAuth();
   const tabs = [
     { id: "dashboard", label: "Dashboard" },
@@ -23,8 +23,8 @@ export default function NavBar({ screen, setScreen, userStats }) {
           .slice(0, 2)
       : "U";
 
-  const userRank = userStats?.rank || "Apprentice";
-  const userXP = userStats?.total_xp || 0;
+  const userXP = user?.xp || 0;
+  const userRank = getRankFromXP(userXP);
 
   return (
     <div
@@ -151,12 +151,4 @@ export default function NavBar({ screen, setScreen, userStats }) {
 NavBar.propTypes = {
   screen: PropTypes.string.isRequired,
   setScreen: PropTypes.func.isRequired,
-  userStats: PropTypes.shape({
-    rank: PropTypes.string,
-    total_xp: PropTypes.number,
-  }),
-};
-
-NavBar.defaultProps = {
-  userStats: null,
 };

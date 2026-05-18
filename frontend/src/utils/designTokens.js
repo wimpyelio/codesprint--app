@@ -61,3 +61,22 @@ export const positionStyle = (pos) => {
   if (pos === 3) return { color: "#b45309", text: "#3" };
   return { color: C.muted, text: `#${pos}` };
 };
+
+export const RANK_THRESHOLDS = [
+  { name: 'Curious',      min: 0 },
+  { name: 'Tinkerer',     min: 300 },
+  { name: 'Apprentice',   min: 800 },
+  { name: 'Journeyman',   min: 2000 },
+  { name: 'Craftsperson', min: 5000 },
+  { name: 'Architect',    min: 10000 },
+  { name: 'Maestro',      min: 25000 },
+];
+
+export const getRankFromXP = (xp = 0) => {
+  let rank = RANK_THRESHOLDS[0].name;
+  for (const r of RANK_THRESHOLDS) {
+    if (xp >= r.min) rank = r.name;
+    else break;
+  }
+  return rank;
+};

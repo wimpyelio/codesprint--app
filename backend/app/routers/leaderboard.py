@@ -35,18 +35,17 @@ def get_global_leaderboard(
     """
     users_with_stats = db.query(
         User,
-        func.count(UserProgress.id).label('completion_count')
-    ).outerjoin(UserProgress, (UserProgress.user_id == User.id) & (UserProgress.status == 'completed')).filter(User.is_active == True).group_by(User.id).order_by(desc(User.xp)).offset(offset).limit(limit).all()
+        func.count(UserProgress.id).label('completion_count'),
+        func.coalesce(func.avg(UserProgress.hints_used), 0.0).label('avg_hints'),
+    ).outerjoin(
+        UserProgress,
+        (UserProgress.user_id == User.id) & (UserProgress.status == 'completed')
+    ).filter(
+        User.is_active == True
+    ).group_by(User.id).order_by(desc(User.xp)).offset(offset).limit(limit).all()
     
     result = []
-    for rank, (user, completion_count) in enumerate(users_with_stats, start=offset + 1):
-        completed = db.query(UserProgress).filter(
-            UserProgress.user_id == user.id,
-            UserProgress.status == 'completed'
-        ).all()
-        
-        avg_hints = (sum(p.hints_used for p in completed) / len(completed)) if completed else 0
-        
+    for rank, (user, completion_count, avg_hints) in enumerate(users_with_stats, start=offset + 1):
         result.append(LeaderboardSchema(
             id=user.id,
             email=user.email,
@@ -58,7 +57,7 @@ def get_global_leaderboard(
             created_at=user.created_at,
             rank=rank,
             completion_count=completion_count,
-            average_hints=avg_hints
+            average_hints=float(avg_hints)
         ))
     
     return result

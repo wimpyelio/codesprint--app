@@ -1,0 +1,79 @@
+# Gitleaks configuration for CodeSprint
+# This configuration detects potential secrets in commits
+# Reference: https://github.com/gitleaks/gitleaks
+
+version = 1
+description = "CodeSprint security configuration for secret detection"
+
+[extend]
+toml = "https://raw.githubusercontent.com/gitleaks/gitleaks/master/gitleaks.toml"
+
+# Additional patterns specific to CodeSprint
+[[rules]]
+id = "supabase-api-key"
+description = "Supabase API Key"
+regex = '''sb_(pub|anon|service|anonKey|serviceKey)_[a-zA-Z0-9_\-]{32}'''
+keywords = ["supabase", "sb_"]
+tags = ["database", "supabase"]
+severity = "HIGH"
+
+[[rules]]
+id = "database-url-exposure"
+description = "PostgreSQL Database URL with credentials"
+regex = '''postgresql://[a-zA-Z0-9_]+:.+@[a-zA-Z0-9\.\-]+\:[0-9]+/'''
+keywords = ["postgresql://", "postgres://"]
+tags = ["database"]
+severity = "CRITICAL"
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Bearer Token"
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'''
+keywords = ["jwt", "bearer", "eyJ"]
+tags = ["auth"]
+severity = "HIGH"
+
+[[rules]]
+id = "github-oauth-secret"
+description = "GitHub OAuth Client Secret"
+regex = '''github.*secret.*=\s*[a-f0-9]{40}'''
+keywords = ["github", "client_secret", "oauth"]
+tags = ["auth", "github"]
+severity = "HIGH"
+
+[[rules]]
+id = "encryption-key"
+description = "Base64 Encryption Key"
+regex = '''[A-Za-z0-9+/]{32,}={0,2}'''
+keywords = ["encryption", "key", "secret_key", "token_encryption_key"]
+tags = ["encryption"]
+severity = "MEDIUM"
+threshold = 30  # Minimum base64 length to avoid false positives
+
+# Allowlist - patterns to ignore
+[allowlist]
+regexes = [
+    # Ignore .env.example placeholders
+    '''YOUR_[A-Z_]+''',
+    '''GENERATE_[A-Z_]+''',
+    # Ignore local dev values
+    '''local-dev-[a-z\-]+''',
+    # Ignore documentation examples
+    '''example\.com''',
+    '''placeholder''',
+    '''test-token''',
+    # Ignore AAAA... patterns (obviously placeholder)
+    '''A{32,}''',
+]
+
+paths = [
+    # Don't scan these directories
+    '''^\.git''',
+    '''^node_modules''',
+    '''^venv''',
+    '''\.md$''',
+]
+
+commits = [
+    # Ignore specific commits by hash (if needed)
+]

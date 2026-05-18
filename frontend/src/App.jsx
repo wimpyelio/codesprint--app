@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "./contexts/AuthContext";
-import { statsService } from "./services/statsService";
 import NavBar from "./components/NavBar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Dashboard from "./pages/Dashboard";
@@ -12,24 +11,19 @@ import { C } from "./utils/designTokens";
 import "./styles/App.css";
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [screen, setScreen] = useState("dashboard");
-  const [userStats, setUserStats] = useState(null);
 
-  useEffect(() => {
-    const fetchUserStats = async () => {
-      if (isAuthenticated) {
-        try {
-          const stats = await statsService.getMyStats();
-          setUserStats(stats);
-        } catch (err) {
-          console.error("Error fetching user stats:", err);
-        }
-      }
-    };
-
-    fetchUserStats();
-  }, [isAuthenticated]);
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: C.bg, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: C.mono, fontSize: 13, color: C.muted }}>
+          Initializing...
+        </span>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <AuthModal isOpen={true} onClose={() => {}} />;
@@ -43,7 +37,7 @@ function App() {
         fontFamily: C.mono,
       }}
     >
-      <NavBar screen={screen} setScreen={setScreen} userStats={userStats} />
+      <NavBar screen={screen} setScreen={setScreen} />
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <ErrorBoundary fallbackText="Failed to render this page.">
           {screen === "dashboard" && <Dashboard />}

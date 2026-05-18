@@ -38,6 +38,14 @@ def get_db() -> Generator[Session, None, None]:
 
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+if SECRET_KEY == "your-secret-key-change-in-production":
+    import warnings
+    warnings.warn(
+        "SECRET_KEY is set to the insecure default value. "
+        "Set a strong SECRET_KEY in your .env before deploying.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 

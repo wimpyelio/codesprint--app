@@ -47,4 +47,9 @@ export const projectsService = {
   getUserProjects: async (userId) => {
     return await apiCall(`/users/${userId}/projects`);
   },
+
+  // Get recent projects (user progress)
+  getRecentProjects: async () => {
+    return await apiCall('/progress/');
+  },
 };

@@ -1,0 +1,153 @@
+name: 🔒 Security Audit
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security audit daily at 2 AM UTC
+    - cron: "0 2 * * *"
+
+jobs:
+  secrets-detection:
+    name: 🔐 Detect Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install detect-secrets
+        run: pip install detect-secrets
+
+      - name: Scan for secrets
+        run: |
+          detect-secrets scan --all-files \
+            --baseline .secrets.baseline \
+            --force-use-all-plugins || true
+
+  npm-audit:
+    name: 📦 npm Audit
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Run npm audit
+        run: cd frontend && npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Generate audit report
+        if: always()
+        run: cd frontend && npm audit --json > audit-report.json || true
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: npm-audit-report-${{ matrix.node-version }}
+          path: frontend/audit-report.json
+
+  dependency-check:
+    name: 🔍 Dependency Check (OWASP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "CodeSprint"
+          path: "."
+          format: "JSON"
+          args: >
+            --scan frontend/package.json
+            --enableExperimental
+
+      - name: Upload results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: reports/dependency-check-report.sarif
+
+  lockfile-integrity:
+    name: 🔗 Verify Lockfile Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Verify lockfile is up-to-date
+        run: |
+          cd frontend
+          npm ci --prefer-offline --no-audit
+          if ! git diff --quiet package-lock.json; then
+            echo "❌ Lockfile is out of sync with package.json"
+            echo "Run 'npm install' and commit the changes"
+            exit 1
+          fi
+          echo "✅ Lockfile is in sync"
+
+  env-file-check:
+    name: 🚫 Check for Exposed Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for .env files
+        run: |
+          if git log --all --full-history -- "*.env" | grep -q .; then
+            echo "❌ ERROR: .env file found in git history!"
+            echo "This file should never be committed."
+            exit 1
+          fi
+          echo "✅ No .env files in history"
+
+      - name: Verify .env.example has no secrets
+        run: |
+          if grep -E "(postgres:|@db\.|AAAA|local-dev)" backend/.env.example; then
+            echo "⚠️  WARNING: Potential secrets in .env.example"
+            echo "Ensure this file only contains placeholders"
+          else
+            echo "✅ .env.example looks clean"
+          fi
+
+  codeql:
+    name: 🔬 CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: "javascript"
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
