@@ -75,6 +75,21 @@ npm run lint
 npm run test
 ```
 
+## Latest Updates
+
+**May 18, 2026**: Applied critical surgical fix pass (10 fixes). See [docs/FIXES.md](docs/FIXES.md) for details.
+
+Key improvements:
+- ✅ Fixed auth loading flash
+- ✅ Eliminated redundant API calls
+- ✅ Fixed Dashboard crash
+- ✅ Fixed N+1 leaderboard query (99% reduction)
+- ✅ Extended stats endpoint with 13 new fields
+- ✅ Added secure defaults warnings
+- ✅ Archived dead code
+
+Frontend builds successfully, backend syntax validated.
+
 ## Contributing
 
 1. Create a feature branch.

@@ -40,10 +40,21 @@ Base URL: `http://localhost:8000/api`
 
 ## Stats
 
-- `GET /stats/me/stats`
-- `GET /stats/{user_id}/public-stats`
-- `GET /stats/progress/by-difficulty`
-- `GET /stats/badges/my-badges`
+- `GET /stats/me/stats` - Returns user statistics with rank progression, weekly stats, and breakdown by difficulty
+  - Response fields:
+    - `rank`: Current rank name
+    - `xp_for_current_rank`, `xp_for_next_rank`: XP boundaries for rank progression
+    - `rank_position`: User's position in global rankings
+    - `weekly_xp`: XP earned in last 7 days
+    - `weekly_xp_change`: % change vs previous 7 days
+    - `projects_this_week`, `hints_this_week`: Weekly activity
+    - `beginner_completed`, `intermediate_completed`, `advanced_completed`: Projects by tier
+    - `accuracy_percent`: % of completions with zero hints
+    - `total_badges`: Count of all badges in system
+    - `best_streak`: User's longest streak
+- `GET /stats/{user_id}/public-stats` - Public statistics for another user
+- `GET /stats/progress/by-difficulty` - Breakdown of user progress by project tier
+- `GET /stats/badges/my-badges` - List of user's earned badges
 
 ## Achievements
 
